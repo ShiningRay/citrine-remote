@@ -1,0 +1,33 @@
+name: Release
+
+# RubyGems Trusted Publishing（OIDC）：打 v* 标签即在无任何 secret 的情况下构建并发布。
+# 一次性前置（rubygems.org 网页操作）：
+#   rubygems.org → Profile → Trusted Publishers → Add
+#   （gem name: citrine-remote，owner: ShiningRay，repo: citrine-remote，
+#    workflow: release.yml，environment: 留空）
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  gem:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write # Trusted Publishing（OIDC）必需
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+      - name: 发布门禁（与 CI 同口径）
+        run: bundle exec rake
+      - name: 构建 gem
+        run: gem build citrine-remote.gemspec
+      - name: 附产物到 GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: citrine-remote-*.gem
+      - name: 发布到 RubyGems（Trusted Publishing，无需 API key）
+        uses: rubygems/release-gem@v1
